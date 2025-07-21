@@ -10,6 +10,8 @@ class BBQCalculator {
         };
         
         this.currentSchedule = null;
+        this.timers = new Map(); // Store active timers
+        this.notificationPermission = null;
         this.init();
     }
 
@@ -20,6 +22,69 @@ class BBQCalculator {
         
         // Set default time to 6 PM
         document.getElementById('serve-time').value = '18:00';
+        
+        // Initialize notification permission
+        this.requestNotificationPermission();
+        
+        // Load saved timers from localStorage
+        this.loadTimers();
+        
+        // Start timer update interval
+        this.startTimerUpdates();
+    }
+
+    async requestNotificationPermission() {
+        if ('Notification' in window) {
+            try {
+                this.notificationPermission = await Notification.requestPermission();
+                console.log('Notification permission:', this.notificationPermission);
+            } catch (error) {
+                console.log('Notification permission error:', error);
+                this.notificationPermission = 'denied';
+            }
+        }
+    }
+
+    showNotification(title, body, options = {}) {
+        if (this.notificationPermission === 'granted') {
+            const notification = new Notification(title, {
+                body: body,
+                icon: 'icon-192.png',
+                badge: 'icon-192.png',
+                tag: 'bbq-timer',
+                requireInteraction: true,
+                ...options
+            });
+            
+            // Auto-close after 10 seconds
+            setTimeout(() => notification.close(), 10000);
+            
+            // Play audio alert
+            this.playAlert();
+            
+            return notification;
+        }
+    }
+
+    playAlert() {
+        // Create audio alert since some browsers/devices don't play notification sounds
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // BBQ-themed alert sound (short beeps)
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
     }
 
     calculateCookingTime(weight, temperature, wrapMethod) {
@@ -72,13 +137,14 @@ class BBQCalculator {
         const cookStartTime = new Date(restStartTime.getTime() - (times.cook * 60 * 60 * 1000));
         const prepStartTime = new Date(cookStartTime.getTime() - (times.prep * 60 * 60 * 1000));
 
-        // Build timeline
+        // Build timeline with timer integration
         schedule.push({
             icon: '🛒',
             title: 'Start Prep & Setup',
             time: this.formatTime(prepStartTime),
             description: 'Trim brisket, apply rub, set up smoker',
-            datetime: prepStartTime
+            datetime: prepStartTime,
+            timerId: 'prep-start'
         });
 
         schedule.push({
@@ -86,7 +152,8 @@ class BBQCalculator {
             title: 'Start Cooking',
             time: this.formatTime(cookStartTime),
             description: 'Put brisket on smoker, maintain temperature',
-            datetime: cookStartTime
+            datetime: cookStartTime,
+            timerId: 'cook-start'
         });
 
         // Add wrap timing if applicable
@@ -98,7 +165,8 @@ class BBQCalculator {
                 title: `Wrap in ${wrapMethod === 'foil' ? 'Foil' : 'Butcher Paper'}`,
                 time: this.formatTime(wrapTime),
                 description: 'Wrap brisket when internal temp reaches 165°F',
-                datetime: wrapTime
+                datetime: wrapTime,
+                timerId: 'wrap-time'
             });
         }
 
@@ -107,7 +175,8 @@ class BBQCalculator {
             title: 'Check for Doneness',
             time: this.formatTime(new Date(restStartTime.getTime() - (30 * 60 * 1000))),
             description: 'Internal temp 195-210°F, probe tender',
-            datetime: new Date(restStartTime.getTime() - (30 * 60 * 1000))
+            datetime: new Date(restStartTime.getTime() - (30 * 60 * 1000)),
+            timerId: 'check-doneness'
         });
 
         schedule.push({
@@ -115,7 +184,8 @@ class BBQCalculator {
             title: 'Start Resting',
             time: this.formatTime(restStartTime),
             description: 'Wrap in towels, place in cooler',
-            datetime: restStartTime
+            datetime: restStartTime,
+            timerId: 'rest-start'
         });
 
         schedule.push({
@@ -123,10 +193,143 @@ class BBQCalculator {
             title: 'Ready to Serve',
             time: this.formatTime(serveTime),
             description: 'Slice against the grain and enjoy!',
-            datetime: serveTime
+            datetime: serveTime,
+            timerId: 'serve-time'
         });
 
         return schedule;
+    }
+
+    // Timer Management Methods
+    createTimer(name, targetDateTime, description = '') {
+        const id = Date.now().toString();
+        const now = new Date();
+        const timeRemaining = targetDateTime.getTime() - now.getTime();
+        
+        if (timeRemaining <= 0) {
+            return null; // Don't create timers for past events
+        }
+        
+        const timer = {
+            id: id,
+            name: name,
+            description: description,
+            targetDateTime: targetDateTime,
+            timeRemaining: timeRemaining,
+            isActive: true,
+            created: now
+        };
+        
+        this.timers.set(id, timer);
+        this.saveTimers();
+        return timer;
+    }
+
+    deleteTimer(id) {
+        this.timers.delete(id);
+        this.saveTimers();
+        this.updateTimerUI();
+    }
+
+    startTimerUpdates() {
+        setInterval(() => {
+            this.updateTimers();
+        }, 1000);
+    }
+
+    updateTimers() {
+        const now = new Date();
+        let hasUpdates = false;
+        
+        for (let [id, timer] of this.timers) {
+            if (!timer.isActive) continue;
+            
+            const timeRemaining = timer.targetDateTime.getTime() - now.getTime();
+            
+            if (timeRemaining <= 0) {
+                // Timer finished!
+                this.showNotification(
+                    `🔥 ${timer.name}`,
+                    timer.description || 'Time to check your BBQ!',
+                    { tag: `timer-${id}` }
+                );
+                
+                timer.isActive = false;
+                hasUpdates = true;
+            } else {
+                timer.timeRemaining = timeRemaining;
+                hasUpdates = true;
+            }
+        }
+        
+        if (hasUpdates) {
+            this.updateTimerUI();
+            this.saveTimers();
+        }
+    }
+
+    saveTimers() {
+        const timersData = Array.from(this.timers.entries()).map(([id, timer]) => [
+            id, 
+            {
+                ...timer,
+                targetDateTime: timer.targetDateTime.toISOString(),
+                created: timer.created.toISOString()
+            }
+        ]);
+        localStorage.setItem('bbq-timers', JSON.stringify(timersData));
+    }
+
+    loadTimers() {
+        try {
+            const saved = localStorage.getItem('bbq-timers');
+            if (saved) {
+                const timersData = JSON.parse(saved);
+                this.timers = new Map(timersData.map(([id, timer]) => [
+                    id,
+                    {
+                        ...timer,
+                        targetDateTime: new Date(timer.targetDateTime),
+                        created: new Date(timer.created)
+                    }
+                ]));
+                this.updateTimerUI();
+            }
+        } catch (error) {
+            console.error('Failed to load timers:', error);
+            this.timers = new Map();
+        }
+    }
+
+    updateTimerUI() {
+        const container = document.getElementById('active-timers');
+        if (!container) return;
+        
+        const activeTimers = Array.from(this.timers.values()).filter(t => t.isActive);
+        
+        if (activeTimers.length === 0) {
+            container.innerHTML = '<p class="no-timers">No active timers</p>';
+            return;
+        }
+        
+        const timersHtml = activeTimers.map(timer => {
+            const hours = Math.floor(timer.timeRemaining / (1000 * 60 * 60));
+            const minutes = Math.floor((timer.timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timer.timeRemaining % (1000 * 60)) / 1000);
+            
+            return `
+                <div class="timer-item ${timer.timeRemaining < 300000 ? 'timer-urgent' : ''}">
+                    <div class="timer-content">
+                        <h4 class="timer-name">${timer.name}</h4>
+                        <div class="timer-display">${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}</div>
+                        <p class="timer-description">${timer.description}</p>
+                    </div>
+                    <button class="timer-delete" onclick="deleteTimer('${timer.id}')" title="Delete timer">🗑️</button>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = timersHtml;
     }
 
     getChecklistItems(phase) {
@@ -212,7 +415,7 @@ function calculateTiming() {
 }
 
 function displayResults(schedule, times, weight, temperature) {
-    // Display timeline
+    // Display timeline with timer buttons
     const timelineHtml = schedule.map(item => `
         <div class="timeline-item">
             <div class="timeline-icon">${item.icon}</div>
@@ -220,6 +423,9 @@ function displayResults(schedule, times, weight, temperature) {
                 <h3>${item.title}</h3>
                 <div class="timeline-time">${item.time}</div>
                 <p>${item.description}</p>
+                <button class="btn-timer" onclick="setTimerFromSchedule('${item.timerId}', '${item.title}', '${item.datetime}', '${item.description}')">
+                    ⏰ Set Timer
+                </button>
             </div>
         </div>
     `).join('');
@@ -247,6 +453,61 @@ function displayResults(schedule, times, weight, temperature) {
     `;
     
     document.getElementById('key-stats').innerHTML = statsHtml;
+    
+    // Show timer section
+    showTimerSection();
+}
+
+function showTimerSection() {
+    document.getElementById('timer-section').style.display = 'block';
+    calculator.updateTimerUI();
+}
+
+function setTimerFromSchedule(timerId, title, datetime, description) {
+    const targetDate = new Date(datetime);
+    const timer = calculator.createTimer(title, targetDate, description);
+    
+    if (timer) {
+        calculator.updateTimerUI();
+        calculator.showNotification('Timer Set!', `${title} timer is now active`);
+    } else {
+        alert('Cannot set timer for past events');
+    }
+}
+
+function createCustomTimer() {
+    const name = document.getElementById('timer-name').value.trim();
+    const hours = parseInt(document.getElementById('timer-hours').value) || 0;
+    const minutes = parseInt(document.getElementById('timer-minutes').value) || 0;
+    
+    if (!name) {
+        alert('Please enter a timer name');
+        return;
+    }
+    
+    if (hours === 0 && minutes === 0) {
+        alert('Please set a time greater than 0');
+        return;
+    }
+    
+    const totalMinutes = (hours * 60) + minutes;
+    const targetTime = new Date(Date.now() + (totalMinutes * 60 * 1000));
+    
+    const timer = calculator.createTimer(name, targetTime, `${hours}h ${minutes}m timer`);
+    if (timer) {
+        calculator.updateTimerUI();
+        
+        // Clear form
+        document.getElementById('timer-name').value = '';
+        document.getElementById('timer-hours').value = '';
+        document.getElementById('timer-minutes').value = '';
+        
+        calculator.showNotification('Timer Set!', `${name} timer is now active`);
+    }
+}
+
+function deleteTimer(id) {
+    calculator.deleteTimer(id);
 }
 
 function showChecklist() {

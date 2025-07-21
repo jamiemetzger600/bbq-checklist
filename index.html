@@ -123,6 +123,61 @@
                 </div>
             </section>
 
+            <!-- Timer Section -->
+            <section class="timer-section" id="timer-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>⏰ BBQ Timers</h2>
+                        <p>Set alerts for key cooking milestones</p>
+                    </div>
+                    
+                    <!-- Active Timers -->
+                    <div class="timer-container">
+                        <h3>🔥 Active Timers</h3>
+                        <div id="active-timers" class="timers-list">
+                            <p class="no-timers">No active timers</p>
+                        </div>
+                    </div>
+
+                    <!-- Create Custom Timer -->
+                    <div class="timer-create">
+                        <h3>➕ Create Custom Timer</h3>
+                        <div class="timer-form">
+                            <div class="form-group">
+                                <label for="timer-name">Timer Name</label>
+                                <input type="text" id="timer-name" placeholder="e.g., Check Ribs, Flip Chicken" maxlength="50">
+                            </div>
+                            
+                            <div class="timer-duration">
+                                <div class="form-group">
+                                    <label for="timer-hours">Hours</label>
+                                    <input type="number" id="timer-hours" min="0" max="24" placeholder="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="timer-minutes">Minutes</label>
+                                    <input type="number" id="timer-minutes" min="0" max="59" placeholder="30">
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn-timer-create" onclick="createCustomTimer()">
+                                ⏰ Start Timer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timer Tips -->
+                    <div class="timer-tips">
+                        <h4>💡 Timer Tips</h4>
+                        <ul>
+                            <li><strong>🔔 Notifications:</strong> Browser notifications will alert you when timers finish</li>
+                            <li><strong>🎵 Audio:</strong> Audible alerts work even when the app is in background</li>
+                            <li><strong>💾 Persistent:</strong> Timers survive page refreshes and browser restarts</li>
+                            <li><strong>🎯 Smart:</strong> Click "Set Timer" on any schedule item for instant setup</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
             <!-- Checklist Section -->
             <section class="checklist-section" id="checklist-section" style="display: none;">
                 <div class="card">

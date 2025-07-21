@@ -262,6 +262,183 @@ body {
     opacity: 0.9;
 }
 
+/* Timer Styles */
+.timer-container {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid #e9ecef;
+}
+
+.timer-container h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-xl);
+}
+
+.timers-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.timer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--success-color);
+    transition: all 0.3s ease;
+}
+
+.timer-item.timer-urgent {
+    border-left-color: var(--accent-color);
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    animation: timerPulse 2s infinite;
+}
+
+@keyframes timerPulse {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.8; }
+}
+
+.timer-content {
+    flex: 1;
+}
+
+.timer-name {
+    color: var(--primary-color);
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-size-lg);
+}
+
+.timer-display {
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--accent-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.timer-urgent .timer-display {
+    color: var(--error-color);
+}
+
+.timer-description {
+    color: var(--gray);
+    margin: 0;
+    font-size: var(--font-size-sm);
+}
+
+.timer-delete {
+    background: none;
+    border: none;
+    font-size: var(--font-size-xl);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.timer-delete:hover {
+    background: var(--error-color);
+    transform: scale(1.1);
+}
+
+.no-timers {
+    text-align: center;
+    color: var(--gray);
+    font-style: italic;
+    padding: var(--spacing-xl);
+    margin: 0;
+}
+
+/* Timer Creation */
+.timer-create {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid #e9ecef;
+}
+
+.timer-create h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-xl);
+}
+
+.timer-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.timer-duration {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.btn-timer-create {
+    background: linear-gradient(135deg, var(--success-color) 0%, #32CD32 100%);
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.btn-timer-create:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-timer {
+    background: var(--warning-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: var(--spacing-sm);
+    transition: all 0.3s ease;
+}
+
+.btn-timer:hover {
+    background: #e57c00;
+    transform: translateY(-1px);
+}
+
+/* Timer Tips */
+.timer-tips {
+    padding: var(--spacing-xl);
+    background: var(--light-gray);
+}
+
+.timer-tips h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.timer-tips ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.timer-tips li {
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.timer-tips li:last-child {
+    border-bottom: none;
+}
+
 /* Checklist Styles */
 .checklist-tabs {
     display: flex;
@@ -363,6 +540,24 @@ body {
     .timeline-icon {
         margin-right: 0;
         margin-bottom: var(--spacing-sm);
+    }
+    
+    .timer-duration {
+        grid-template-columns: 1fr;
+    }
+    
+    .timer-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+    
+    .timer-delete {
+        align-self: flex-end;
+    }
+    
+    .btn-timer-create {
+        width: 100%;
     }
 }
 
