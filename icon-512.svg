@@ -1,0 +1,6 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#8B4513"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#FF6347" stroke-width="20"/>
+  <polygon points="256,130 290,210 222,210" fill="#FF6347"/>
+  <text x="256" y="370" text-anchor="middle" fill="white" font-family="Arial" font-size="64" font-weight="bold">BBQ</text>
+</svg>
